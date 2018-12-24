@@ -27,13 +27,13 @@ jobnum=6
 ## USER CONFIG VARS ##
 
 # jobsize is number of frames per job
-#jobsize=$(((( frameCount / jobnum )) + 1 )) #adding frames to make sure we run off the end - brute force kludge! If too many jobs are built we may have an issue, I'd prefer a sane rounding
+jobsize=$(((( frameCount / jobnum )) + 1 )) #adding frames to make sure we run off the end - brute force kludge! If too many jobs are built we may have an issue, I'd prefer a sane rounding
 
-jobsize=1000 #changed for testing
+#jobsize=1000 #for testing
 #echo jobsize $jobsize 
 counter=0
-seek=0
-chunkstart=0
+seek=-100
+chunkstart=100
 frames=$(( jobsize + 100 )) #FIRST job gets an added 100 frames, after this we want 200
 
 
@@ -43,7 +43,7 @@ cropdetect="$(ffmpeg -ss 13 -i $1 -t 1 -vf "cropdetect=24:16:0" -preset ultrafas
 while [ $counter -lt $jobnum ]; do
 
 # chunkstart=$(( $seek + 100 ))
-# chunkend=$(( $chunkstart + $jobsize ))
+ chunkend=$(( $chunkstart + $jobsize ))
 # echo
 # echo seek $seek then stream $frames frames
 # echo chunk starts $chunkstart and goes $jobsize forward to end $chunkend 
