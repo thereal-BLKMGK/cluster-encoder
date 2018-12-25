@@ -35,7 +35,7 @@ jobsize=$(((( frameCount / jobnum )) +1 ))
 
 echo jobsize $jobsize 
 
-counter=1 #we start the counter at one due to the single unique job done prior to looping
+counter=0
 seek=0 #first job only to begin at 0
 chunkstart=0 #first job only to start at 0
 chunkend=$jobsize
@@ -45,6 +45,8 @@ echo frames $frames
 #first job
 	echo "ffmpeg -hide_banner -i "$1" -filter:v "\""$cropdetect"\"" -strict -1 -f yuv4mpegpipe - | x265 - --no-open-gop --seek $seek --frames $frames --chunk-start $chunkstart --chunk-end $chunkend --colorprim bt709 --transfer bt709 --colormatrix bt709 --crf=20 --fps 24000/1001 --min-keyint 24 --keyint 240 --sar 1:1 --preset slow --ctu 16 --y4m --pools "+" -o chunky"$counter".265"
 
+	counter=1 #we did a job outside the loop
+	
 chunkstart=$(( buffer )) #fixing chunkstart
 chunkend=$((jobsize + chunkstart)) # eliminating the buffer from the start
 
