@@ -30,7 +30,7 @@ jobnum=6
 jobsize=$(((( frameCount / jobnum )) + 1 )) #adding frames to make sure we run off the end - brute force kludge! If too many jobs are built we may have an issue, I'd prefer a sane rounding
 
 #jobsize=1000 #for testing
-#echo jobsize $jobsize 
+echo jobsize $jobsize 
 counter=0
 seek=-100
 chunkstart=100
@@ -54,8 +54,10 @@ while [ $counter -lt $jobnum ]; do
   # seek should be 100 frames less than the last ending streamed frame
   seek=$(((( $seek + $frames )) -100 )) 
   chunkstart=100
-  frames=$(( jobsize + 100 )) #frames, total frames needs to be 200 over jobsize to allow a 100 frame buffer on either end of chunk except FIRST job. Seek gave us the first 100
   
+  #frames=$(( jobsize + 200 )) #frames, total frames needs to be 200 over jobsize to allow a 100 frame buffer on either end of chunk except FIRST job. 
+  
+
   
  endframe=$(( endframe + jobsize ))
  
