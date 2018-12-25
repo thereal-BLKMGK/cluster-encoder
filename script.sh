@@ -21,47 +21,51 @@ frameCount=`mediainfo --fullscan $1 | \
 
 #echo framecount "$framecount"
 
-# jobnum controls how many jobs we're making
+# jobnum controls how many jobs we're making, we should make this an input
 jobnum=6
-
-## USER CONFIG VARS ##
-
-# jobsize is number of frames per job
-jobsize=$(((( frameCount / jobnum )) + 1 )) #adding frames to make sure we run off the end - brute force kludge! If too many jobs are built we may have an issue, I'd prefer a sane rounding
-
-#jobsize=1000 #for testing
-echo jobsize $jobsize 
-counter=0
-seek=-100
-chunkstart=100
-frames=$(( jobsize + 100 )) #FIRST job gets an added 100 frames, after this we want 200
-
 
 #crop detection code cribbed elsewhere
 cropdetect="$(ffmpeg -ss 13 -i $1 -t 1 -vf "cropdetect=24:16:0" -preset ultrafast -f null - 2>&1 | awk '/crop/ { print $NF }' | tail -1)"
 
+## USER CONFIG VARS ##
+buffer=100 #frames on either side of job, should take this as input
+
+# jobsize is number of frames per job + 1 to round, better to go off the end than come up short
+jobsize=$(((( frameCount / jobnum )) +1 ))
+
+echo jobsize $jobsize 
+
+counter=1 #we start the counter at one due to the single unique job done prior to looping
+seek=0 #first job only to begin at 0
+chunkstart=0 #first job only to start at 0
+chunkend=$jobsize
+echo chunkstart $chunkstart
+frames=$(( jobsize + buffer )) #FIRST job gets buffer on one side only
+echo frames $frames
+#first job
+	echo "ffmpeg -hide_banner -i "$1" -filter:v "\""$cropdetect"\"" -strict -1 -f yuv4mpegpipe - | x265 - --no-open-gop --seek $seek --frames $frames --chunk-start $chunkstart --chunk-end $chunkend --colorprim bt709 --transfer bt709 --colormatrix bt709 --crf=20 --fps 24000/1001 --min-keyint 24 --keyint 240 --sar 1:1 --preset slow --ctu 16 --y4m --pools "+" -o chunky"$counter".265"
+
+chunkstart=$(( buffer )) #fixing chunkstart
+chunkend=$((jobsize + chunkstart)) # eliminating the buffer from the start
+
+seek=$((seek + frames - buffer - buffer))
+
+echo seek before loop $seek
+
 while [ $counter -lt $jobnum ]; do
 
-# chunkstart=$(( $seek + 100 ))
- chunkend=$(( $chunkstart + $jobsize ))
-# echo
-# echo seek $seek then stream $frames frames
-# echo chunk starts $chunkstart and goes $jobsize forward to end $chunkend 
+	frames=$(( jobsize + buffer + buffer)) #jobs in the loop arte buffered on both sides
+	echo frames in loop top $frames
+ 
+	chunkend=$(( $chunkstart + $jobsize ))
 
-	echo "ffmpeg -hide_banner -i "$1" -filter:v "\""$cropdetect"\"" -strict -1 -f yuv4mpegpipe - | x265 - --no-open-gop --seek $seek --frames $frames --chunk-start $chunkstart --chunk-end $jobsize --colorprim bt709 --transfer bt709 --colormatrix bt709 --crf=20 --fps 24000/1001 --min-keyint 24 --keyint 240 --sar 1:1 --preset slow --ctu 16 --y4m --pools "+" -o chunky"$counter".265"
+	echo "ffmpeg -hide_banner -i "$1" -filter:v "\""$cropdetect"\"" -strict -1 -f yuv4mpegpipe - | x265 - --no-open-gop --seek $seek --frames $frames --chunk-start $chunkstart --chunk-end $chunkend --colorprim bt709 --transfer bt709 --colormatrix bt709 --crf=20 --fps 24000/1001 --min-keyint 24 --keyint 240 --sar 1:1 --preset slow --ctu 16 --y4m --pools "+" -o chunky"$counter".265"
+	echo seek $seek
 	
+  # seek should be $buffer frames less than the last ending streamed frame
+  seek=$(( seek + frames - buffer - buffer))
  
-  # seek should be 100 frames less than the last ending streamed frame
-  seek=$(((( $seek + $frames )) -100 )) 
-  chunkstart=100
-  
-  #frames=$(( jobsize + 200 )) #frames, total frames needs to be 200 over jobsize to allow a 100 frame buffer on either end of chunk except FIRST job. 
-  
 
-  
- endframe=$(( endframe + jobsize ))
- 
- #echo endframe $endframe
   
    ((counter++))
 
