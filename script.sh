@@ -33,15 +33,15 @@ buffer=100 #frames on either side of job, should take this as input
 # jobsize is number of frames per job + 1 to round, better to go off the end than come up short
 jobsize=$(((( frameCount / jobnum )) +1 ))
 
-echo jobsize $jobsize 
+#echo jobsize $jobsize 
 
 counter=0
 seek=0 #first job only to begin at 0
 chunkstart=0 #first job only to start at 0
-chunkend=$jobsize
-echo chunkstart $chunkstart
+chunkend=$((jobsize -1))
+#echo chunkstart $chunkstart
 frames=$(( jobsize + buffer )) #FIRST job gets buffer on one side only
-echo frames $frames
+#echo frames $frames
 #first job
 	echo "ffmpeg -hide_banner -i "$1" -filter:v "\""$cropdetect"\"" -strict -1 -f yuv4mpegpipe - | x265 - --no-open-gop --seek $seek --frames $frames --chunk-start $chunkstart --chunk-end $chunkend --colorprim bt709 --transfer bt709 --colormatrix bt709 --crf=20 --fps 24000/1001 --min-keyint 24 --keyint 240 --sar 1:1 --preset slow --ctu 16 --y4m --pools "+" -o chunky"$counter".265"
 
@@ -52,17 +52,17 @@ chunkend=$((jobsize + chunkstart)) # eliminating the buffer from the start
 
 seek=$((seek + frames - buffer - buffer))
 
-echo seek before loop $seek
+#echo seek before loop $seek
 
 while [ $counter -lt $jobnum ]; do
 
 	frames=$(( jobsize + buffer + buffer)) #jobs in the loop arte buffered on both sides
-	echo frames in loop top $frames
+#	echo frames in loop top $frames
  
-	chunkend=$(( $chunkstart + $jobsize ))
+	chunkend=$(((( $chunkstart + $jobsize )) - 1))
 
 	echo "ffmpeg -hide_banner -i "$1" -filter:v "\""$cropdetect"\"" -strict -1 -f yuv4mpegpipe - | x265 - --no-open-gop --seek $seek --frames $frames --chunk-start $chunkstart --chunk-end $chunkend --colorprim bt709 --transfer bt709 --colormatrix bt709 --crf=20 --fps 24000/1001 --min-keyint 24 --keyint 240 --sar 1:1 --preset slow --ctu 16 --y4m --pools "+" -o chunky"$counter".265"
-	echo seek $seek
+#	echo seek $seek
 	
   # seek should be $buffer frames less than the last ending streamed frame
   seek=$(( seek + frames - buffer - buffer))
