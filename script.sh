@@ -25,7 +25,7 @@ frameCount=`mediainfo --fullscan $1 | \
 jobnum=6
 
 #crop detection code cribbed elsewhere
-cropdetect="$(ffmpeg -ss 13 -i $1 -t 1 -vf "cropdetect=24:16:0" -preset ultrafast -f null - 2>&1 | awk '/crop/ { print $NF }' | tail -1)"
+cropdetect="$(ffmpeg -ss 900 -i $1 -t 1 -vf "cropdetect=24:16:0" -preset ultrafast -f null - 2>&1 | awk '/crop/ { print $NF }' | tail -1)"
 
 ## USER CONFIG VARS ##
 buffer=100 #frames on either side of job, should take this as input
